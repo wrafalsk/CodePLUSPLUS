@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1d4ed8">
+<title>SpotSwap — standalone demo</title>
+<style>
+  :root {
+    --bg:#f4f6fb; --card:#fff; --text:#111827; --muted:#6b7280;
+    --primary:#1d4ed8; --primary-text:#fff; --accent:#d97706;
+    --border:#e5e7eb; --danger:#b91c1c; --ok:#047857;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:#0f1117; --card:#1a1d27; --text:#f3f4f6; --muted:#9ca3af;
+      --primary:#3b82f6; --border:#2b2f3d; --danger:#f87171; --ok:#34d399;
+    }
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0 auto; max-width:34rem; padding:0 1rem 3rem;
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.45;
+  }
+  header { padding:1rem 0 .25rem; }
+  h1 { margin:0; font-size:1.5rem; }
+  h2 { font-size:1.05rem; margin:1.25rem 0 .5rem; }
+  .muted { color:var(--muted); }
+  .small { font-size:.8rem; }
+  .demo-banner {
+    background:var(--card); border:1px dashed var(--border);
+    border-radius:.6rem; padding:.6rem .8rem; margin:.75rem 0;
+    font-size:.82rem; color:var(--muted);
+  }
+  .demo-banner b { color:var(--text); }
+  form label { display:block; margin:.75rem 0; font-size:.9rem; font-weight:600; }
+  input {
+    display:block; width:100%; margin-top:.3rem; padding:.65rem .75rem;
+    font-size:1rem; border:1px solid var(--border); border-radius:.5rem;
+    background:var(--card); color:var(--text);
+  }
+  input[type=number] { max-width:6rem; }
+  button {
+    padding:.65rem 1rem; font-size:1rem; border:1px solid var(--border);
+    border-radius:.5rem; background:var(--card); color:var(--text);
+    cursor:pointer; touch-action:manipulation;
+  }
+  button.primary { background:var(--primary); border-color:var(--primary); color:var(--primary-text); font-weight:600; }
+  button.big { width:100%; padding:.9rem; margin-top:.5rem; }
+  button.link { background:none; border:none; color:var(--muted); text-decoration:underline; font-size:.8rem; margin-top:2rem; padding:.25rem 0; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:.75rem; padding:.85rem 1rem; margin:.5rem 0; }
+  .card.mine { border-color:var(--primary); }
+  .card.warming { border-left:4px solid var(--accent); }
+  .car { font-weight:700; }
+  .when { font-size:.95rem; }
+  .loc { color:var(--muted); font-size:.85rem; }
+  .badge { display:inline-block; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.03em; padding:.1rem .45rem; border-radius:999px; background:var(--accent); color:#fff; vertical-align:middle; }
+  .badge.claimed { background:var(--primary); }
+  .badge.mine { background:var(--ok); }
+  .card-actions { margin-top:.5rem; display:flex; gap:.5rem; flex-wrap:wrap; }
+  .card-actions button { font-size:.85rem; padding:.45rem .8rem; }
+  .settings { display:flex; align-items:center; gap:.5rem; font-size:.85rem; color:var(--muted); margin-top:1rem; flex-wrap:wrap; }
+  .settings input { display:inline-block; margin:0; padding:.35rem .5rem; }
+  #toast { position:fixed; left:50%; bottom:1.25rem; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:.6rem 1rem; border-radius:.5rem; font-size:.9rem; max-width:90%; z-index:10; }
+  .announce-buttons { display:flex; flex-direction:column; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🅿️ SpotSwap</h1>
+  <p id="hood-label" class="muted" hidden></p>
+</header>
+
+<div class="demo-banner">
+  <b>Standalone demo.</b> No server, no sign-up, no data leaves this browser.
+  A real deployment matches strangers through a tiny server; here that shared
+  list is faked in this browser's storage. <b>Open this same file in a second
+  browser tab</b> to act as another neighbor and watch spots appear live — or
+  tap <b>“Add a demo neighbor”</b> to try the whole handoff in one tab.
+</div>
+
+<!-- Registration -->
+<section id="view-register">
+  <h2>Join your neighborhood</h2>
+  <p class="muted">No email, no phone number, no real name. Everything stays on
+    this device and your spot announcements auto-delete.</p>
+  <form id="register-form">
+    <label>Display name
+      <input name="name" required maxlength="40" placeholder="e.g. BlueHatchbackJess" autocomplete="off">
+    </label>
+    <label>Your car (make / model / color)
+      <input name="car" required maxlength="60" placeholder="e.g. Blue Honda Fit" autocomplete="off">
+    </label>
+    <label>Neighborhood code
+      <input name="neighborhood" required maxlength="60" value="maplewood-north" autocomplete="off">
+    </label>
+    <button type="submit" class="primary">Join</button>
+  </form>
+</section>
+
+<!-- Main app -->
+<section id="view-app" hidden>
+  <div id="my-spot-card" class="card mine" hidden></div>
+
+  <div id="announce-panel">
+    <h2>Leaving your spot?</h2>
+    <div class="announce-buttons">
+      <button id="btn-warming" class="primary big">🔥 Warming up now</button>
+      <button id="btn-schedule" class="big">🕐 Pick a leaving time</button>
+    </div>
+    <form id="schedule-form" hidden>
+      <label>Leaving at <input type="time" name="time" required></label>
+      <label>Where's the spot? (block-level, please)
+        <input name="locationText" maxlength="100" placeholder="e.g. Elm St between 3rd & 4th">
+      </label>
+      <button type="submit" class="primary">Announce</button>
+    </form>
+    <form id="warming-form" hidden>
+      <label>Where's the spot? (block-level, please)
+        <input name="locationText" maxlength="100" placeholder="e.g. Elm St between 3rd & 4th">
+      </label>
+      <button type="submit" class="primary">Start countdown</button>
+    </form>
+  </div>
+
+  <h2>Spots opening near you</h2>
+  <div id="spot-list"></div>
+
+  <button id="btn-demo" class="big" style="margin-top:.75rem">🧑‍🤝‍🧑 Add a demo neighbor’s spot</button>
+
+  <div class="settings">
+    <label style="font-weight:600">“Warming up” window
+      <input id="grace-input" type="number" min="1" max="60" step="1">
+    </label>
+    <span>minutes — experiment with the grace period.</span>
+  </div>
+  <p class="muted small" id="grace-note"></p>
+  <button id="btn-logout" class="link">Leave neighborhood (clears this device)</button>
+</section>
+
+<script>
+'use strict';
+// ---------------------------------------------------------------------------
+// SpotSwap — single-file demo. The "server" is faked with localStorage; live
+// cross-tab updates ride on BroadcastChannel (with a storage-event fallback).
+// This mirrors the real app's server/store.js + public/app.js, minus the
+// network. Swap this shim for real fetch() calls to run it for real.
+// ---------------------------------------------------------------------------
+
+const $ = (s) => document.querySelector(s);
+const SESSION_KEY = 'spotswap.session';
+const SPOTS_KEY   = 'spotswap.spots';   // shared "server" state
+const GRACE_KEY   = 'spotswap.grace';
+const uid = () => Math.random().toString(36).slice(2, 11);
+
+// Session lives in sessionStorage so each browser TAB is its own neighbor,
+// while the shared spot list (the fake "server") lives in localStorage and is
+// visible to every tab. Open this file in a second tab to be a second person.
+let user = loadSession();
+let graceMinutes = Number(localStorage.getItem(GRACE_KEY)) || 15;
+let tick = null;
+
+const channel = ('BroadcastChannel' in self) ? new BroadcastChannel('spotswap') : null;
+if (channel) channel.onmessage = () => refresh();
+addEventListener('storage', (e) => { if (e.key === SPOTS_KEY) refresh(); });
+function broadcast() { channel && channel.postMessage('change'); }
+
+function load(key) { try { return JSON.parse(localStorage.getItem(key)); } catch { return null; } }
+function save(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+function loadSession() { try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; } }
+function saveSession(val) { sessionStorage.setItem(SESSION_KEY, JSON.stringify(val)); }
+
+// ---- the fake "server" -----------------------------------------------------
+function allSpots() {
+  const now = Date.now();
+  let spots = load(SPOTS_KEY) || [];
+  const kept = spots.filter((s) => s.expiresAt > now);   // TTL sweep on read
+  if (kept.length !== spots.length) save(SPOTS_KEY, kept);
+  return kept;
+}
+function writeSpots(spots) { save(SPOTS_KEY, spots); broadcast(); }
+
+function announce({ mode, leavingAt, locationText }, owner) {
+  const spots = allSpots().filter((s) => s.userId !== owner.id); // one active per user
+  const now = Date.now();
+  let leaving, expires;
+  if (mode === 'warming') {
+    leaving = now + graceMinutes * 60000;
+    expires = leaving;
+  } else {
+    leaving = leavingAt;
+    expires = leaving + graceMinutes * 60000;
+  }
+  spots.push({
+    id: uid(), userId: owner.id, neighborhood: owner.neighborhood,
+    car: owner.car, ownerName: owner.name, locationText: locationText || '',
+    mode, leavingAt: leaving, expiresAt: expires,
+    status: 'open', claimedBy: null, claimerName: null, bot: !!owner.bot,
+  });
+  writeSpots(spots);
+}
+
+function mutateSpot(id, fn) {
+  const spots = allSpots();
+  const spot = spots.find((s) => s.id === id);
+  if (!spot) return;
+  const drop = fn(spot);
+  writeSpots(drop ? spots.filter((s) => s.id !== id) : spots);
+}
+
+// ---- rendering -------------------------------------------------------------
+function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+function fmtTime(ts) { return new Date(ts).toLocaleTimeString([], { hour:'numeric', minute:'2-digit' }); }
+function fmtCountdown(ts) { const m = Math.max(0, Math.round((ts - Date.now())/60000)); return m <= 1 ? 'about a minute' : `~${m} min`; }
+function toast(msg) { $('#toast')?.remove(); const el = document.createElement('div'); el.id='toast'; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(), 3200); }
+
+function btn(label, cls, fn) { const b=document.createElement('button'); b.textContent=label; if(cls)b.className=cls; b.onclick=fn; return b; }
+
+function spotCard(spot) {
+  const mine = spot.userId === user.id;
+  const claimedByMe = spot.claimedBy === user.id;
+  const card = document.createElement('div');
+  card.className = 'card' + (spot.mode==='warming'?' warming':'') + (mine?' mine':'');
+  const when = spot.mode==='warming'
+    ? `🔥 Warming up — leaving in ${fmtCountdown(spot.leavingAt)}`
+    : `🕐 Leaving at ${fmtTime(spot.leavingAt)}`;
+  card.innerHTML =
+    `<div class="car">${esc(spot.car)}` +
+      `${spot.status==='claimed'?'<span class="badge claimed">claimed</span>':''}` +
+      `${mine?'<span class="badge mine">your spot</span>':''}` +
+    `</div>` +
+    `<div class="when">${when}</div>` +
+    (spot.locationText?`<div class="loc">📍 ${esc(spot.locationText)}</div>`:'') +
+    (spot.claimerName?`<div class="loc">🚗 ${esc(spot.claimerName)} is heading there</div>`:'') +
+    `<div class="card-actions"></div>`;
+  const actions = card.querySelector('.card-actions');
+  if (mine) {
+    actions.append(
+      btn("✅ I've left — handoff done", 'primary', () => { mutateSpot(spot.id, ()=>true); refresh(); }),
+      btn('Cancel', '', () => { mutateSpot(spot.id, ()=>true); refresh(); }),
+    );
+  } else if (!spot.claimerName) {
+    actions.append(btn("🚗 I'm heading there", 'primary', () => claim(spot.id)));
+  } else if (claimedByMe) {
+    actions.append(document.createTextNode('You claimed this spot — good luck!'));
+  }
+  if (!actions.hasChildNodes()) actions.remove();
+  return card;
+}
+
+function claim(id) {
+  mutateSpot(id, (spot) => {
+    if (spot.userId === user.id) { toast("You can't claim your own spot"); return false; }
+    if (spot.claimedBy && spot.claimedBy !== user.id) { toast('Spot already claimed'); return false; }
+    spot.claimedBy = user.id; spot.claimerName = user.name; spot.status = 'claimed';
+    // A demo neighbor "pulls out" a few seconds after being claimed, closing the loop.
+    if (spot.bot) setTimeout(() => { mutateSpot(id, ()=>true); refresh(); toast('The demo neighbor pulled out — spot is yours! 🎉'); }, 6000);
+    return false;
+  });
+  refresh();
+}
+
+function refresh() {
+  if (!user) return;
+  const spots = allSpots().filter((s) => s.neighborhood === user.neighborhood)
+    .sort((a,b) => a.leavingAt - b.leavingAt);
+  const mine = spots.find((s) => s.userId === user.id);
+  const others = spots.filter((s) => s.userId !== user.id);
+
+  const myCard = $('#my-spot-card');
+  myCard.hidden = !mine; myCard.replaceChildren();
+  if (mine) myCard.appendChild(spotCard(mine));
+  $('#announce-panel').hidden = !!mine;
+
+  const list = $('#spot-list'); list.replaceChildren();
+  if (!others.length) {
+    const p = document.createElement('p'); p.className='muted';
+    p.textContent = 'No spots opening right now. Announcements from neighbors appear here live.';
+    list.appendChild(p);
+  } else others.forEach((s) => list.appendChild(spotCard(s)));
+}
+
+// ---- demo neighbor generator ----------------------------------------------
+const DEMO_CARS = ['Silver Toyota Corolla','Red Subaru Outback','White Ford F-150','Green VW Golf','Black Tesla Model 3','Grey Mazda CX-5','Blue Jeep Wrangler'];
+const DEMO_NAMES = ['CornerSpotCarlos','MinivanMaya','HatchbackHank','WagonWendy','PickupPat','CoupeCarol'];
+const DEMO_LOCS = ['Elm St between 3rd & 4th','Oak Ave near the bakery','Maple & 7th, by the hydrant','2nd St across from the park','Pine St mid-block'];
+const pick = (a) => a[Math.floor(Math.random()*a.length)];
+
+function addDemoNeighbor() {
+  const warming = Math.random() < 0.6;
+  const bot = { id: 'bot-'+uid(), name: pick(DEMO_NAMES), car: pick(DEMO_CARS), neighborhood: user.neighborhood, bot: true };
+  if (warming) {
+    announce({ mode:'warming', locationText: pick(DEMO_LOCS) }, bot);
+  } else {
+    announce({ mode:'scheduled', leavingAt: Date.now() + (5 + Math.floor(Math.random()*20))*60000, locationText: pick(DEMO_LOCS) }, bot);
+  }
+  refresh();
+  toast(`${bot.name} announced a spot near you`);
+}
+
+// ---- view wiring -----------------------------------------------------------
+function show(v) {
+  $('#view-register').hidden = v !== 'register';
+  $('#view-app').hidden = v !== 'app';
+  $('#hood-label').hidden = v !== 'app';
+}
+
+function enterApp() {
+  show('app');
+  $('#hood-label').textContent = `${user.name} · ${user.car} · #${user.neighborhood}`;
+  $('#grace-input').value = graceMinutes;
+  updateGraceNote();
+  refresh();
+  clearInterval(tick);
+  tick = setInterval(refresh, 1000); // live countdowns + TTL sweep
+}
+
+function updateGraceNote() {
+  $('#btn-warming').textContent = `🔥 Warming up now (${graceMinutes} min)`;
+  $('#grace-note').textContent = `“Warming up” gives you a ${graceMinutes}-minute window; announcements auto-delete when they expire. Change it above to experiment.`;
+}
+
+$('#register-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const d = Object.fromEntries(new FormData(e.target));
+  if (!d.name.trim() || !d.car.trim() || !d.neighborhood.trim()) return;
+  user = { id: uid(), name: d.name.trim(), car: d.car.trim(),
+           neighborhood: d.neighborhood.toLowerCase().trim().replace(/\s+/g,'-') };
+  saveSession(user);
+  enterApp();
+});
+
+$('#btn-warming').addEventListener('click', () => { $('#warming-form').hidden=false; $('#schedule-form').hidden=true; });
+$('#btn-schedule').addEventListener('click', () => { $('#schedule-form').hidden=false; $('#warming-form').hidden=true; });
+
+$('#warming-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const { locationText } = Object.fromEntries(new FormData(e.target));
+  announce({ mode:'warming', locationText }, user);
+  e.target.reset(); e.target.hidden = true; refresh();
+});
+
+$('#schedule-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const { time, locationText } = Object.fromEntries(new FormData(e.target));
+  const [h,m] = time.split(':').map(Number);
+  const leaving = new Date(); leaving.setHours(h,m,0,0);
+  if (leaving.getTime() <= Date.now()) leaving.setDate(leaving.getDate()+1);
+  announce({ mode:'scheduled', leavingAt: leaving.getTime(), locationText }, user);
+  e.target.reset(); e.target.hidden = true; refresh();
+});
+
+$('#btn-demo').addEventListener('click', addDemoNeighbor);
+
+$('#grace-input').addEventListener('change', (e) => {
+  graceMinutes = Math.min(60, Math.max(1, Number(e.target.value) || 15));
+  e.target.value = graceMinutes;
+  localStorage.setItem(GRACE_KEY, graceMinutes);
+  updateGraceNote();
+});
+
+$('#btn-logout').addEventListener('click', () => {
+  sessionStorage.removeItem(SESSION_KEY); user = null; clearInterval(tick); show('register');
+});
+
+user ? enterApp() : show('register');
+</script>
+</body>
+</html>
