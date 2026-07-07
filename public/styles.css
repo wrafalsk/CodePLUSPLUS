@@ -1,0 +1,143 @@
+:root {
+  --bg: #f4f6fb;
+  --card: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --primary: #1d4ed8;
+  --primary-text: #ffffff;
+  --accent: #d97706;
+  --border: #e5e7eb;
+  --danger: #b91c1c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --text: #f3f4f6;
+    --muted: #9ca3af;
+    --primary: #3b82f6;
+    --border: #2b2f3d;
+    --danger: #f87171;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0 auto;
+  max-width: 34rem;
+  padding: 0 1rem 3rem;
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.45;
+}
+
+header { padding: 1rem 0 0.25rem; }
+h1 { margin: 0; font-size: 1.5rem; }
+h2 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
+
+.muted { color: var(--muted); }
+.small { font-size: 0.8rem; }
+
+form label {
+  display: block;
+  margin: 0.75rem 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+input {
+  display: block;
+  width: 100%;
+  margin-top: 0.3rem;
+  padding: 0.65rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+  color: var(--text);
+}
+
+button {
+  padding: 0.65rem 1rem;
+  font-size: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--card);
+  color: var(--text);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+button.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-text);
+  font-weight: 600;
+}
+
+button.big { width: 100%; padding: 0.9rem; margin-top: 0.5rem; }
+button.link {
+  background: none;
+  border: none;
+  color: var(--muted);
+  text-decoration: underline;
+  font-size: 0.8rem;
+  margin-top: 2rem;
+  padding: 0.25rem 0;
+}
+button.danger-link {
+  background: none; border: none;
+  color: var(--danger);
+  text-decoration: underline;
+  font-size: 0.85rem;
+  padding: 0.25rem 0;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.85rem 1rem;
+  margin: 0.5rem 0;
+}
+
+.card.mine { border-color: var(--primary); }
+.card.warming { border-left: 4px solid var(--accent); }
+
+.spot-list .car { font-weight: 700; }
+.spot-list .when { font-size: 0.95rem; }
+.spot-list .loc { color: var(--muted); font-size: 0.85rem; }
+
+.badge {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  vertical-align: middle;
+}
+.badge.claimed { background: var(--primary); }
+
+.card-actions { margin-top: 0.5rem; display: flex; gap: 0.5rem; }
+.card-actions button { font-size: 0.85rem; padding: 0.45rem 0.8rem; }
+
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: var(--bg);
+  padding: 0.6rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+  max-width: 90%;
+  z-index: 10;
+}

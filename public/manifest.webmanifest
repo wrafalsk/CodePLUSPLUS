@@ -1,0 +1,17 @@
+{
+  "name": "SpotSwap",
+  "short_name": "SpotSwap",
+  "description": "Neighborhood street-parking handoffs — know when a spot is opening up.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f1117",
+  "theme_color": "#1d4ed8",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

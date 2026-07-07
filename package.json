@@ -1,0 +1,15 @@
+{
+  "name": "spotswap",
+  "version": "0.1.0",
+  "description": "Neighborhood street-parking handoffs — know when a spot is opening up.",
+  "private": true,
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

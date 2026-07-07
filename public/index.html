@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1d4ed8">
+  <title>SpotSwap</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <header>
+    <h1>🅿️ SpotSwap</h1>
+    <p id="hood-label" class="muted" hidden></p>
+  </header>
+
+  <!-- Registration -->
+  <section id="view-register">
+    <h2>Join your neighborhood</h2>
+    <p class="muted">No email, no phone number, no real name. Your info stays
+      pseudonymous and your spot announcements auto-delete.</p>
+    <form id="register-form">
+      <label>Display name
+        <input name="name" required maxlength="40" placeholder="e.g. BlueHatchbackJess" autocomplete="off">
+      </label>
+      <label>Your car (make / model / color)
+        <input name="car" required maxlength="60" placeholder="e.g. Blue Honda Fit" autocomplete="off">
+      </label>
+      <label>Neighborhood code
+        <input name="neighborhood" required maxlength="60" placeholder="e.g. maplewood-north" autocomplete="off">
+      </label>
+      <button type="submit" class="primary">Join</button>
+    </form>
+  </section>
+
+  <!-- Main app -->
+  <section id="view-app" hidden>
+    <div id="my-spot-card" class="card mine" hidden></div>
+
+    <div id="announce-panel">
+      <h2>Leaving your spot?</h2>
+      <div class="announce-buttons">
+        <button id="btn-warming" class="primary big">🔥 Warming up now</button>
+        <button id="btn-schedule" class="big">🕐 Pick a leaving time</button>
+      </div>
+      <form id="schedule-form" hidden>
+        <label>Leaving at
+          <input type="time" name="time" required>
+        </label>
+        <label>Where's the spot? (block-level, please)
+          <input name="locationText" maxlength="100" placeholder="e.g. Elm St between 3rd & 4th">
+        </label>
+        <button type="submit" class="primary">Announce</button>
+      </form>
+      <form id="warming-form" hidden>
+        <label>Where's the spot? (block-level, please)
+          <input name="locationText" maxlength="100" placeholder="e.g. Elm St between 3rd & 4th">
+        </label>
+        <button type="submit" class="primary">Start countdown</button>
+      </form>
+    </div>
+
+    <h2>Spots opening near you</h2>
+    <div id="spot-list" class="spot-list">
+      <p class="muted">Loading…</p>
+    </div>
+    <p class="muted small" id="grace-note"></p>
+    <button id="btn-logout" class="link">Leave neighborhood (clears this device)</button>
+  </section>
+
+  <script src="/app.js"></script>
+</body>
+</html>
