@@ -33,6 +33,8 @@ device, and what should be auto-deleted.
 - **Live spot feed** for your neighborhood, sorted soonest-first, showing
   the departing car's description and approximate location (block-level
   free-text like "Elm St between 3rd & 4th" — never a GPS pin of a home).
+  Updates arrive in real time over Server-Sent Events (~100 ms), with a
+  30-second poll as fallback.
 - **Claiming**: an arriving driver can tap *"I'm heading there"* so the
   departing driver knows someone is coming, reducing wasted holds.
 - **Auto-expiry**: every announcement has a TTL. Expired spots vanish from
@@ -46,6 +48,19 @@ for every announcement lifecycle transition (created → claimed → completed /
 expired). Those logs are the raw material for tuning the window per
 neighborhood based on real traffic: if spots routinely expire unclaimed,
 lengthen it; if claimers arrive to find the car long gone, shorten it.
+
+Until real traffic exists, `npm run simulate` sweeps grace periods over
+synthetic neighborhood traffic (Poisson arrivals, configurable driver
+behavior, seeded RNG for reproducibility) and reports claim rate, handoff
+success, give-ups, spots lost to the public, and average wait per window
+length:
+
+```bash
+npm run simulate -- --hours 12 --departures 20 --seekers 24 --seed 42
+```
+
+The behavioral distributions live in `tools/simulate.js` (`BEHAVIOR`) and
+are meant to be replaced with measurements from the lifecycle logs.
 
 ## Running the prototype
 
@@ -67,11 +82,15 @@ deploy anywhere Node runs. Configuration via env vars:
 ## Repository layout
 
 ```
-server/server.js   Zero-dependency Node HTTP server: static files + JSON API
-server/store.js    In-memory data store with TTL sweeper (swap for a DB later)
+server/server.js   Zero-dependency Node HTTP server: static files + JSON API + SSE
+server/store.js    In-memory data store with TTL sweeper + change bus (swap for a DB later)
 public/            Mobile-first PWA frontend (vanilla HTML/CSS/JS)
+tools/simulate.js  Grace-period experiment harness (synthetic traffic sweep)
+test/              node:test suites: store lifecycle + HTTP/SSE integration
 docs/              Architecture & privacy decisions
 ```
+
+Run the tests with `npm test` (no dependencies to install).
 
 ## Roadmap
 

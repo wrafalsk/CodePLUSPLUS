@@ -1,6 +1,12 @@
 'use strict';
 
 const crypto = require('crypto');
+const { EventEmitter } = require('events');
+
+// Fires 'change' with the neighborhood name whenever matching state mutates,
+// so the server can push live updates to connected clients.
+const bus = new EventEmitter();
+bus.setMaxListeners(0);
 
 const GRACE_PERIOD_MINUTES = Number(process.env.GRACE_PERIOD_MINUTES) || 15;
 const SCHEDULED_TTL_MINUTES = Number(process.env.SCHEDULED_TTL_MINUTES) || 240;
@@ -95,6 +101,7 @@ function createAnnouncement(user, { mode, leavingAt, locationText }) {
   };
   announcements.set(ann.id, ann);
   logEvent('created', ann);
+  bus.emit('change', ann.neighborhood);
   return ann;
 }
 
@@ -118,6 +125,7 @@ function claimAnnouncement(annId, claimer) {
   ann.claimerName = claimer.name;
   ann.status = 'claimed';
   logEvent('claimed', ann);
+  bus.emit('change', ann.neighborhood);
   return ann;
 }
 
@@ -130,6 +138,7 @@ function completeAnnouncement(annId, userId) {
   ann.status = 'completed';
   logEvent('completed', ann);
   announcements.delete(ann.id); // Tier 1 data: gone the moment it's done.
+  bus.emit('change', ann.neighborhood);
   return ann;
 }
 
@@ -141,6 +150,7 @@ function cancelAnnouncement(annId, userId) {
   }
   logEvent('unclaimed', ann);
   announcements.delete(ann.id);
+  bus.emit('change', ann.neighborhood);
 }
 
 // TTL sweeper — deletion is the default state of Tier 1 data.
@@ -150,6 +160,7 @@ function sweep() {
     if (ann.expiresAt <= now) {
       logEvent('expired', ann);
       announcements.delete(ann.id);
+      bus.emit('change', ann.neighborhood);
     }
   }
 }
@@ -159,6 +170,7 @@ sweeper.unref();
 
 module.exports = {
   GRACE_PERIOD_MINUTES,
+  bus,
   registerUser,
   getUser,
   createAnnouncement,

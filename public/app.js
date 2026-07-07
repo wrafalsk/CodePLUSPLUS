@@ -2,13 +2,15 @@
 
 // Tier 3 storage: the session lives only on this device.
 const SESSION_KEY = 'spotswap.user';
-const POLL_MS = 10 * 1000;
+// SSE delivers changes instantly; polling is only a fallback + countdown refresh.
+const POLL_MS = 30 * 1000;
 
 const $ = (sel) => document.querySelector(sel);
 
 let user = loadSession();
 let gracePeriodMinutes = 15;
 let pollTimer = null;
+let stream = null;
 
 function loadSession() {
   try {
@@ -64,7 +66,17 @@ function logout() {
   localStorage.removeItem(SESSION_KEY);
   user = null;
   clearInterval(pollTimer);
+  stream?.close();
+  stream = null;
   show('register');
+}
+
+function connectStream() {
+  if (!('EventSource' in window) || !user) return;
+  stream?.close();
+  stream = new EventSource(`/api/stream?u=${encodeURIComponent(user.id)}`);
+  stream.addEventListener('update', refresh);
+  // On error EventSource reconnects on its own; the poll timer covers the gap.
 }
 
 // ---------- rendering ----------
@@ -228,6 +240,7 @@ async function enterApp() {
     `"Warming up" gives you a ${gracePeriodMinutes}-minute window; announcements auto-delete when they expire.`;
   $('#btn-warming').textContent = `🔥 Warming up now (${gracePeriodMinutes} min)`;
   await refresh();
+  connectStream();
   clearInterval(pollTimer);
   pollTimer = setInterval(refresh, POLL_MS);
 }

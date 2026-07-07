@@ -82,6 +82,32 @@ async function handleApi(req, res, url) {
     return sendJson(res, 200, { gracePeriodMinutes: store.GRACE_PERIOD_MINUTES });
   }
 
+  // Live updates. EventSource can't set headers, so the user id rides in the
+  // query string; it's the same pseudonymous token the header carries.
+  if (route === 'GET /api/stream') {
+    const userId = url.searchParams.get('u');
+    const user = userId && store.getUser(userId);
+    if (!user) {
+      throw Object.assign(new Error('unknown user — register first'), { status: 401 });
+    }
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-store',
+      Connection: 'keep-alive',
+    });
+    res.write('retry: 5000\n\n');
+    const onChange = (neighborhood) => {
+      if (neighborhood === user.neighborhood) res.write('event: update\ndata: {}\n\n');
+    };
+    store.bus.on('change', onChange);
+    const heartbeat = setInterval(() => res.write(': ping\n\n'), 25 * 1000);
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      store.bus.off('change', onChange);
+    });
+    return;
+  }
+
   if (route === 'POST /api/register') {
     const body = await readBody(req);
     for (const field of ['name', 'car', 'neighborhood']) {
